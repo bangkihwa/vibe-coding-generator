@@ -984,45 +984,103 @@ ${formattedAnswers}
 
         // 탭 전환
         function switchTab(tabName) {
+            console.log('Switching to tab:', tabName);
+            console.log('Available documents:', Object.keys(generatedDocuments));
+
             // 모든 탭 비활성화
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
-                if (tab.textContent.toLowerCase().replace(/\s+/g, '') === tabName.toLowerCase()) {
-                    tab.classList.add('active');
-                }
             });
 
+            // 클릭된 탭 활성화 (event.target이 있는 경우)
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // 프로그래밍 방식으로 호출된 경우
+                document.querySelectorAll('.tab').forEach(tab => {
+                    const tabText = tab.textContent.toLowerCase().replace(/\s+/g, '');
+                    if (tabText === 'userflow') tabText = 'userflow';
+                    if (tabText === 'promptdesign') tabText = 'prompt';
+                    if (tabText === '원샷프롬프트') tabText = 'oneshot';
+                    if (tabText === tabName.toLowerCase()) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+
             // 문서 내용 표시
-            const content = generatedDocuments[tabName] || '문서를 생성 중입니다...';
-            document.getElementById('documentText').textContent = content;
+            const content = generatedDocuments[tabName];
+            console.log('Document content for', tabName, ':', content ? content.substring(0, 100) + '...' : 'Not found');
+
+            if (content) {
+                document.getElementById('documentText').textContent = content;
+            } else {
+                document.getElementById('documentText').textContent = '문서를 생성 중입니다...';
+            }
         }
 
         // 문서 복사
         function copyDocument() {
-            const activeTab = document.querySelector('.tab.active').textContent.toLowerCase().replace(' ', '');
-            const content = generatedDocuments[activeTab];
+            const activeTab = document.querySelector('.tab.active');
+            if (!activeTab) {
+                showStatus('선택된 탭이 없습니다.', 'error');
+                return;
+            }
+
+            const tabText = activeTab.textContent.toLowerCase().replace(/\s+/g, '');
+            let docKey = tabText;
+
+            // 탭 이름을 문서 키로 매핑
+            if (tabText === 'userflow') docKey = 'userflow';
+            else if (tabText === 'promptdesign') docKey = 'prompt';
+            else if (tabText === '원샷프롬프트') docKey = 'oneshot';
+
+            console.log('Copying document:', docKey);
+            const content = generatedDocuments[docKey];
 
             if (content) {
                 navigator.clipboard.writeText(content).then(() => {
                     showStatus('클립보드에 복사되었습니다!', 'success');
+                }).catch(err => {
+                    console.error('복사 실패:', err);
+                    showStatus('복사에 실패했습니다.', 'error');
                 });
+            } else {
+                showStatus('복사할 문서가 없습니다.', 'error');
             }
         }
 
         // 문서 다운로드
         function downloadDocument() {
-            const activeTab = document.querySelector('.tab.active').textContent;
-            const content = generatedDocuments[activeTab.toLowerCase().replace(' ', '')];
+            const activeTab = document.querySelector('.tab.active');
+            if (!activeTab) {
+                showStatus('선택된 탭이 없습니다.', 'error');
+                return;
+            }
+
+            const tabText = activeTab.textContent;
+            const tabKey = tabText.toLowerCase().replace(/\s+/g, '');
+            let docKey = tabKey;
+
+            // 탭 이름을 문서 키로 매핑
+            if (tabKey === 'userflow') docKey = 'userflow';
+            else if (tabKey === 'promptdesign') docKey = 'prompt';
+            else if (tabKey === '원샷프롬프트') docKey = 'oneshot';
+
+            console.log('Downloading document:', docKey);
+            const content = generatedDocuments[docKey];
 
             if (content) {
                 const blob = new Blob([content], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${activeTab}.md`;
+                a.download = `${tabText}.md`;
                 a.click();
                 URL.revokeObjectURL(url);
                 showStatus('다운로드가 시작되었습니다!', 'success');
+            } else {
+                showStatus('다운로드할 문서가 없습니다.', 'error');
             }
         }
 
