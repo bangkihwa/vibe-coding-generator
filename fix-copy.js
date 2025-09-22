@@ -1,15 +1,28 @@
 // 복사 기능 수정 스크립트
 
 // 탭 전환 함수 수정
-window.switchTab = function(event, tabName) {
+window.switchTab = function(tabName) {
+    // event 객체가 있는지 확인 (onclick에서 호출된 경우)
+    let clickedElement = null;
+    if (typeof tabName === 'object' && tabName.target) {
+        // 이벤트 객체가 전달된 경우
+        clickedElement = tabName.target;
+        // tabName을 실제 탭 이름으로 변경
+        const onclick = clickedElement.getAttribute('onclick');
+        const match = onclick.match(/switchTab\(['"]([^'"]+)['"]\)/);
+        if (match) {
+            tabName = match[1];
+        }
+    }
+
     // 모든 탭 비활성화
     document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.remove('active');
     });
 
     // 선택된 탭 활성화
-    if (event && event.target) {
-        event.target.classList.add('active');
+    if (clickedElement) {
+        clickedElement.classList.add('active');
     } else {
         // 프로그래밍 방식으로 호출된 경우
         const tabs = ['prd', 'trd', 'userflow', 'prompt', 'oneshot'];
@@ -33,8 +46,11 @@ window.copyDocument = function() {
         return;
     }
 
-    const tabText = activeTab.textContent;
+    const tabText = activeTab.textContent.trim();
     let docKey = '';
+
+    console.log('Active tab text:', tabText);
+    console.log('Available documents:', Object.keys(window.generatedDocuments || {}));
 
     // 탭 텍스트를 문서 키로 변환
     if (tabText === 'PRD') docKey = 'prd';
@@ -43,7 +59,8 @@ window.copyDocument = function() {
     else if (tabText === 'Prompt Design') docKey = 'prompt';
     else if (tabText === '원샷 프롬프트') docKey = 'oneshot';
 
-    const content = window.generatedDocuments[docKey];
+    console.log('Document key:', docKey);
+    const content = window.generatedDocuments ? window.generatedDocuments[docKey] : null;
 
     if (content) {
         // 먼저 navigator.clipboard 시도
