@@ -396,6 +396,22 @@
             <p>AI와 함께 아이디어를 현실로 만드는 가장 빠른 방법</p>
         </div>
 
+        <!-- API 키 입력 모달 -->
+        <div id="apiKeyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%;">
+                <h2 style="margin-bottom: 20px;">Gemini API 키 입력</h2>
+                <p style="margin-bottom: 15px; color: #666;">Gemini API를 사용하려면 API 키가 필요합니다.</p>
+                <input type="text" id="apiKeyInput" placeholder="AIzaSy..." style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="saveApiKey()" class="btn btn-primary" style="flex: 1;">저장</button>
+                    <button onclick="useDefaultKey()" class="btn btn-secondary" style="flex: 1;">기본 키 사용</button>
+                </div>
+                <p style="margin-top: 15px; font-size: 14px; color: #999;">
+                    <a href="https://aistudio.google.com/apikey" target="_blank" style="color: #7c3aed;">API 키 받기 →</a>
+                </p>
+            </div>
+        </div>
+
         <div class="main-content">
             <!-- 아이디어 입력 섹션 -->
             <div class="card input-section">
@@ -511,8 +527,36 @@
 
     <script>
         // Gemini API 설정
-        const GEMINI_API_KEY = 'AIzaSyBXwz6MIv-Td4-50z_XPW4uBL81HzZMkhY';
+        let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || 'AIzaSyBXwz6MIv-Td4-50z_XPW4uBL81HzZMkhY';
         const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+        // API 키 저장
+        function saveApiKey() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            if (apiKey) {
+                GEMINI_API_KEY = apiKey;
+                localStorage.setItem('gemini_api_key', apiKey);
+                document.getElementById('apiKeyModal').style.display = 'none';
+                showStatus('API 키가 저장되었습니다.', 'success');
+            } else {
+                alert('API 키를 입력해주세요.');
+            }
+        }
+
+        // 기본 키 사용
+        function useDefaultKey() {
+            GEMINI_API_KEY = 'AIzaSyBXwz6MIv-Td4-50z_XPW4uBL81HzZMkhY';
+            document.getElementById('apiKeyModal').style.display = 'none';
+        }
+
+        // API 키 확인
+        function checkApiKey() {
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
+                document.getElementById('apiKeyModal').style.display = 'flex';
+                return false;
+            }
+            return true;
+        }
 
         // 16개 질문 템플릿
         const questions = [
