@@ -888,10 +888,10 @@ ${formattedAnswers}
             // 모든 탭 비활성화
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
+                if (tab.textContent.toLowerCase().replace(/\s+/g, '') === tabName.toLowerCase()) {
+                    tab.classList.add('active');
+                }
             });
-
-            // 선택된 탭 활성화
-            event.target.classList.add('active');
 
             // 문서 내용 표시
             const content = generatedDocuments[tabName] || '문서를 생성 중입니다...';
