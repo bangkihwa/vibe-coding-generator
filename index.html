@@ -500,11 +500,11 @@
             <h2>🎉 생성된 문서</h2>
 
             <div class="document-tabs">
-                <button class="tab active" onclick="switchTab('prd')">PRD</button>
-                <button class="tab" onclick="switchTab('trd')">TRD</button>
-                <button class="tab" onclick="switchTab('userflow')">User Flow</button>
-                <button class="tab" onclick="switchTab('prompt')">Prompt Design</button>
-                <button class="tab" onclick="switchTab('oneshot')">원샷 프롬프트</button>
+                <button class="tab active" onclick="switchTab('prd', this)">PRD</button>
+                <button class="tab" onclick="switchTab('trd', this)">TRD</button>
+                <button class="tab" onclick="switchTab('userflow', this)">User Flow</button>
+                <button class="tab" onclick="switchTab('prompt', this)">Prompt Design</button>
+                <button class="tab" onclick="switchTab('oneshot', this)">원샷 프롬프트</button>
             </div>
 
             <div class="document-content" id="documentContent">
@@ -924,7 +924,7 @@ Prompt Design 구조:
                 console.log('생성된 문서들:', Object.keys(generatedDocuments));
 
                 // 첫 번째 문서 표시
-                switchTab('prd');
+                switchTab('prd', null);
 
                 showStatus('모든 문서가 성공적으로 생성되었습니다!', 'success');
             } catch (error) {
@@ -983,39 +983,42 @@ ${formattedAnswers}
         }
 
         // 탭 전환
-        function switchTab(tabName) {
+        function switchTab(tabName, tabElement) {
             console.log('Switching to tab:', tabName);
             console.log('Available documents:', Object.keys(generatedDocuments));
+            console.log('Generated documents:', generatedDocuments);
 
             // 모든 탭 비활성화
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
 
-            // 클릭된 탭 활성화 (event.target이 있는 경우)
-            if (event && event.target) {
-                event.target.classList.add('active');
+            // 클릭된 탭 활성화
+            if (tabElement) {
+                tabElement.classList.add('active');
             } else {
                 // 프로그래밍 방식으로 호출된 경우
                 document.querySelectorAll('.tab').forEach(tab => {
-                    const tabText = tab.textContent.toLowerCase().replace(/\s+/g, '');
-                    if (tabText === 'userflow') tabText = 'userflow';
-                    if (tabText === 'promptdesign') tabText = 'prompt';
-                    if (tabText === '원샷프롬프트') tabText = 'oneshot';
-                    if (tabText === tabName.toLowerCase()) {
-                        tab.classList.add('active');
-                    }
+                    if (tab.textContent === 'PRD' && tabName === 'prd') tab.classList.add('active');
+                    else if (tab.textContent === 'TRD' && tabName === 'trd') tab.classList.add('active');
+                    else if (tab.textContent === 'User Flow' && tabName === 'userflow') tab.classList.add('active');
+                    else if (tab.textContent === 'Prompt Design' && tabName === 'prompt') tab.classList.add('active');
+                    else if (tab.textContent === '원샷 프롬프트' && tabName === 'oneshot') tab.classList.add('active');
                 });
             }
 
             // 문서 내용 표시
             const content = generatedDocuments[tabName];
-            console.log('Document content for', tabName, ':', content ? content.substring(0, 100) + '...' : 'Not found');
+            const textElement = document.getElementById('documentText');
+
+            console.log('Document content for', tabName, ':', content ? (content.substring(0, 200) + '...') : 'Not found');
 
             if (content) {
-                document.getElementById('documentText').textContent = content;
+                textElement.textContent = content;
+                console.log('Document displayed successfully');
             } else {
-                document.getElementById('documentText').textContent = '문서를 생성 중입니다...';
+                textElement.textContent = `${tabName.toUpperCase()} 문서를 생성 중입니다... (아직 생성되지 않았거나 오류가 발생했습니다)`;
+                console.log('No document found for:', tabName);
             }
         }
 
