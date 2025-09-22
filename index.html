@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바이브 코딩 프롬프트 생성기 | AI 앱 개발 자동화</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #7c3aed;
+            --primary-dark: #6d28d9;
+            --primary-light: #a78bfa;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 40px -10px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: var(--shadow-xl);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-section h2, .chat-section h2 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .idea-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .idea-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.ai {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+
+        .message.user .message-content {
+            background: var(--primary);
+            color: white;
+        }
+
+        .message.ai .message-content {
+            background: white;
+            color: var(--dark);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 40px;
+            background: var(--light);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            transition: width 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .questions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .question-badge {
+            padding: 8px 12px;
+            background: var(--light);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .question-badge.completed {
+            background: var(--success);
+            color: white;
+        }
+
+        .results-section {
+            display: none;
+            grid-column: span 2;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .document-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .document-content {
+            background: var(--light);
+            padding: 20px;
+            border-radius: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .document-content pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid var(--light);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .questions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .tips {
+            background: linear-gradient(135deg, #fef3c7, #fed7aa);
+            border-left: 4px solid var(--warning);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .tips h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .tips ul {
+            color: #78350f;
+            margin-left: 20px;
+        }
+
+        .tips li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 바이브 코딩 프롬프트 생성기</h1>
+            <p>AI와 함께 아이디어를 현실로 만드는 가장 빠른 방법</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 아이디어 입력 섹션 -->
+            <div class="card input-section">
+                <h2>
+                    <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                    </svg>
+                    아이디어 입력
+                </h2>
+                <textarea class="idea-input" placeholder="어떤 앱을 만들고 싶으신가요?
+예시:
+- '이메일 답장을 자동으로 작성해주는 앱을 만들고 싶어'
+- '운동 루틴을 관리하고 추천해주는 앱이 필요해'
+- '일정 관리와 메모를 한 번에 할 수 있는 앱을 구상중이야'"></textarea>
+
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="analyzeIdea()">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5 3a5 5 0 0 0 0 10h6a5 5 0 0 0 0-10H5zm6 9a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+                        </svg>
+                        AI 분석 시작
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadExample()">
+                        예시 불러오기
+                    </button>
+                </div>
+
+                <div class="tips">
+                    <h3>💡 팁</h3>
+                    <ul>
+                        <li>구체적인 문제나 불편함을 설명해주세요</li>
+                        <li>주요 사용자가 누구인지 생각해보세요</li>
+                        <li>핵심 기능 2-3개를 먼저 정의하면 좋습니다</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- AI 대화 섹션 -->
+            <div class="card chat-section">
+                <h2>
+                    <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"></path>
+                        <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"></path>
+                    </svg>
+                    AI와 대화하기
+                </h2>
+
+                <div class="chat-container" id="chatContainer">
+                    <div class="message ai">
+                        <div class="message-content">
+                            안녕하세요! 아이디어를 구체화하는 것을 도와드릴게요. 먼저 왼쪽에 아이디어를 입력해주세요.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <button class="btn btn-secondary" onclick="skipQuestion()" id="skipBtn" style="display:none;">건너뛰기</button>
+                    <input type="text" class="chat-input" id="chatInput" placeholder="답변을 입력하세요..." disabled>
+                    <button class="btn btn-primary" onclick="sendAnswer()" id="sendBtn" disabled>전송</button>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>AI가 생각하는 중...</p>
+                </div>
+
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+        </div>
+
+        <!-- 진행 상황 -->
+        <div class="card progress-section">
+            <h2>진행 상황</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%;">
+                    0%
+                </div>
+            </div>
+            <div class="questions-grid" id="questionsGrid">
+                <!-- 16개 질문 배지가 동적으로 생성됩니다 -->
+            </div>
+        </div>
+
+        <!-- 결과 섹션 -->
+        <div class="card results-section" id="resultsSection">
+            <h2>🎉 생성된 문서</h2>
+
+            <div class="document-tabs">
+                <button class="tab active" onclick="switchTab('prd')">PRD</button>
+                <button class="tab" onclick="switchTab('trd')">TRD</button>
+                <button class="tab" onclick="switchTab('userflow')">User Flow</button>
+                <button class="tab" onclick="switchTab('prompt')">Prompt Design</button>
+                <button class="tab" onclick="switchTab('oneshot')">원샷 프롬프트</button>
+            </div>
+
+            <div class="document-content" id="documentContent">
+                <pre id="documentText">문서가 여기에 표시됩니다...</pre>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="copyDocument()">
+                    📋 복사하기
+                </button>
+                <button class="btn btn-secondary" onclick="downloadDocument()">
+                    💾 다운로드
+                </button>
+                <button class="btn btn-success" onclick="generateNextDocument()">
+                    다음 문서 생성
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gemini API 설정
+        const GEMINI_API_KEY = 'AIzaSyBXwz6MIv-Td4-50z_XPW4uBL81HzZMkhY';
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+        // 16개 질문 템플릿
+        const questions = [
+            "프로젝트의 이름을 알려주세요.",
+            "이 프로젝트의 성격을 가장 잘 설명하는 범주는 무엇인가요?",
+            "프로젝트의 비전이나 목표를 자유롭게 설명해주세요.",
+            "주 사용자는 누구인가요?",
+            "사용자가 겪고 있는 문제나 불편함을 간단히 적어주세요.",
+            "꼭 필요하다고 생각하는 기능을 선택해주세요.",
+            "이 서비스에서 사용자가 가장 먼저 하게 될 행동을 서술해주세요.",
+            "화면 분위기를 선택해주세요 (심플/화려한/비즈니스/재미있는)",
+            "원하는 UI/UX 아이디어나 참고하고 싶은 서비스가 있다면 적어주세요.",
+            "어떤 환경에서 사용될 예정인가요? (웹/모바일/데스크톱)",
+            "사용하고 싶은 기술 스택이나 환경이 있다면 적어주세요.",
+            "데이터 저장 방식을 선택해주세요 (로컬/클라우드/혼합)",
+            "반드시 연동하고 싶은 외부 서비스(API)가 있다면 적어주세요.",
+            "프로젝트에서 가장 중요한 가치는 무엇인가요?",
+            "테스트/품질에 대한 생각을 적어주세요.",
+            "프로젝트에서 자주 쓸 단어나 약어를 적어주세요."
+        ];
+
+        let currentQuestionIndex = 0;
+        let projectData = {};
+        let conversationHistory = [];
+        let generatedDocuments = {};
+
+        // 초기화
+        function init() {
+            renderQuestionBadges();
+        }
+
+        // 질문 배지 렌더링
+        function renderQuestionBadges() {
+            const grid = document.getElementById('questionsGrid');
+            grid.innerHTML = questions.map((q, i) => `
+                <div class="question-badge" id="q${i}">Q${i + 1}</div>
+            `).join('');
+        }
+
+        // 예시 불러오기
+        function loadExample() {
+            document.querySelector('.idea-input').value = `이메일이나 메시지에 답장하는 것이 부담스러워요.
+특히 거절해야 하는 상황에서 어떻게 정중하게 표현해야 할지 매번 고민됩니다.
+자동으로 상황에 맞는 정중한 답장을 생성해주는 앱이 있으면 좋겠어요.`;
+        }
+
+        // AI로 아이디어 분석
+        async function analyzeIdea() {
+            const ideaText = document.querySelector('.idea-input').value.trim();
+            if (!ideaText) {
+                showStatus('아이디어를 입력해주세요!', 'error');
+                return;
+            }
+
+            // 아이디어 저장
+            projectData.initial_idea = ideaText;
+            currentQuestionIndex = 0;
+
+            // UI 활성화
+            document.getElementById('chatInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('skipBtn').style.display = 'inline-block';
+
+            // 첫 번째 질문 시작
+            addMessage(`좋은 아이디어네요! "${ideaText}" 를 더 구체화해보겠습니다. 몇 가지 질문을 드릴게요.`, 'ai');
+
+            setTimeout(() => {
+                askNextQuestion();
+            }, 1000);
+        }
+
+        // Gemini API 호출
+        async function callGeminiAPI(prompt, isSystemMessage = false) {
+            showLoading(true);
+
+            try {
+                const response = await fetch(GEMINI_API_URL + '?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 2048
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.candidates && data.candidates[0]) {
+                    const aiResponse = data.candidates[0].content.parts[0].text;
+
+                    if (isSystemMessage) {
+                        addMessage(aiResponse, 'ai');
+
+                        // 질문 번호 추출
+                        const questionMatch = aiResponse.match(/\[Q(\d+)\]/);
+                        if (questionMatch) {
+                            currentQuestionIndex = parseInt(questionMatch[1]) - 1;
+                            updateProgress();
+                        }
+                    }
+
+                    showLoading(false);
+                    return aiResponse;
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                showStatus('AI 응답 중 오류가 발생했습니다.', 'error');
+                showLoading(false);
+            }
+        }
+
+        // 다음 질문하기
+        function askNextQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const question = questions[currentQuestionIndex];
+                let formattedQuestion = question;
+
+                // 질문을 더 친근하게 포맷팅
+                if (currentQuestionIndex === 0) {
+                    formattedQuestion = "먼저, 프로젝트의 이름을 정해볼까요? 어떤 이름이 좋을까요?";
+                } else if (currentQuestionIndex === 1) {
+                    formattedQuestion = "이 프로젝트는 어떤 종류의 앱인가요? (예: 생산성 도구, 소셜, 게임, 교육 등)";
+                } else if (currentQuestionIndex === 3) {
+                    formattedQuestion = "주로 누가 사용할 것 같나요? (예: 학생, 직장인, 주부, 전문가 등)";
+                } else if (currentQuestionIndex === 7) {
+                    formattedQuestion = "화면 디자인은 어떤 느낌이면 좋을까요? (심플한/화려한/비즈니스/재미있는)";
+                } else if (currentQuestionIndex === 9) {
+                    formattedQuestion = "어디서 사용할 예정인가요? (웹/모바일 앱/데스크톱 프로그램)";
+                }
+
+                addMessage(`[질문 ${currentQuestionIndex + 1}/16] ${formattedQuestion}`, 'ai');
+
+                // 선택지가 있는 질문들에 버튼 추가
+                if (currentQuestionIndex === 7) {
+                    addQuickResponses(['심플하고 깔끔한', '화려하고 다채로운', '비즈니스 전문적인', '재미있고 귀여운']);
+                } else if (currentQuestionIndex === 9) {
+                    addQuickResponses(['모바일 앱', '웹사이트', '데스크톱 프로그램', '모든 플랫폼']);
+                } else if (currentQuestionIndex === 11) {
+                    addQuickResponses(['로컬 저장만', '클라우드 저장', '둘 다 사용']);
+                }
+            } else {
+                // 모든 질문 완료
+                addMessage("모든 정보가 수집되었습니다! 이제 AI가 완벽한 개발 문서와 프롬프트를 생성합니다.", 'ai');
+                generateDocuments();
+            }
+        }
+
+        // 빠른 응답 버튼 추가
+        function addQuickResponses(options) {
+            const container = document.getElementById('chatContainer');
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'quick-responses';
+            buttonsDiv.style.cssText = 'display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap;';
+
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-secondary';
+                btn.textContent = option;
+                btn.style.cssText = 'padding: 8px 16px; font-size: 14px;';
+                btn.onclick = () => {
+                    document.getElementById('chatInput').value = option;
+                    buttonsDiv.remove();
+                    sendAnswer();
+                };
+                buttonsDiv.appendChild(btn);
+            });
+
+            container.appendChild(buttonsDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 답변 전송
+        async function sendAnswer() {
+            const input = document.getElementById('chatInput');
+            const answer = input.value.trim();
+
+            if (!answer) return;
+
+            // 사용자 메시지 추가
+            addMessage(answer, 'user');
+
+            // 답변 저장
+            projectData[`q${currentQuestionIndex + 1}_${questions[currentQuestionIndex].split(' ')[0]}`] = answer;
+
+            // 진행 상황 업데이트
+            document.getElementById(`q${currentQuestionIndex}`).classList.add('completed');
+
+            // 입력 초기화
+            input.value = '';
+
+            // 다음 질문으로 이동
+            currentQuestionIndex++;
+            updateProgress();
+
+            // 잠시 후 다음 질문
+            setTimeout(() => {
+                askNextQuestion();
+            }, 500);
+        }
+
+        // 메시지 추가
+        function addMessage(text, sender) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `<div class="message-content">${text}</div>`;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 진행 상황 업데이트
+        function updateProgress() {
+            const completed = currentQuestionIndex;
+            const total = 16; // 전체 질문 16개
+            const percentage = Math.round((completed / total) * 100);
+
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = `${percentage}%`;
+            progressBar.textContent = `${percentage}% (${completed}/16)`;
+        }
+
+        // 문서 생성
+        async function generateDocuments() {
+            document.getElementById('resultsSection').classList.add('active');
+
+            showStatus('문서 생성을 시작합니다...', 'success');
+
+            // 수집된 전체 답변 정리
+            const formattedAnswers = questions.map((q, i) => {
+                const key = `q${i + 1}_${q.split(' ')[0]}`;
+                return `${i + 1}. ${q}\n   답변: ${projectData[key] || '(건너뜀)'}`;
+            }).join('\n\n');
+
+            // PRD 생성
+            const prdPrompt = `다음은 사용자가 16개 질문에 답변한 내용입니다:
+
+${formattedAnswers}
+
+초기 아이디어: ${projectData.initial_idea}
+
+위 정보를 바탕으로 상세한 PRD(Product Requirements Document)를 작성해주세요:
+
+PRD 구조:
+1. 제품 개요
+2. 목표 및 비전
+3. 타겟 사용자
+4. 핵심 기능
+5. 사용자 시나리오
+6. 성공 지표
+
+마크다운 형식으로 작성해주세요.`;
+
+            const prd = await callGeminiAPI(prdPrompt);
+            generatedDocuments.prd = prd;
+
+            // TRD 생성
+            const trdPrompt = `다음 PRD를 바탕으로 TRD(Technical Requirements Document)를 작성해주세요:
+
+${prd}
+
+TRD 구조:
+1. 기술 스택
+2. 시스템 아키텍처
+3. API 설계
+4. 데이터베이스 설계
+5. 보안 요구사항
+6. 성능 요구사항
+
+마크다운 형식으로 작성해주세요.`;
+
+            const trd = await callGeminiAPI(trdPrompt);
+            generatedDocuments.trd = trd;
+
+            // User Flow 생성
+            const userflowPrompt = `다음 정보를 바탕으로 User Flow를 작성해주세요:
+
+${Object.entries(projectData).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
+
+User Flow 구조:
+1. 주요 사용자 플로우 정의
+2. 각 플로우의 단계별 설명
+3. Mermaid 다이어그램 코드
+
+마크다운과 Mermaid 형식으로 작성해주세요.`;
+
+            const userflow = await callGeminiAPI(userflowPrompt);
+            generatedDocuments.userflow = userflow;
+
+            // Prompt Design 생성
+            const promptDesignPrompt = `다음 정보를 바탕으로 AI 개발을 위한 Prompt Design 문서를 작성해주세요:
+
+${Object.entries(projectData).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
+
+Prompt Design 구조:
+1. 개발 마일스톤 (5단계)
+2. 각 마일스톤별 구체적인 프롬프트
+3. 테스트 시나리오
+
+각 프롬프트는 AI가 바로 실행할 수 있도록 구체적으로 작성해주세요.`;
+
+            const promptDesign = await callGeminiAPI(promptDesignPrompt);
+            generatedDocuments.prompt = promptDesign;
+
+            // 원샷 프롬프트 생성
+            generatedDocuments.oneshot = generateOneShotPrompt();
+
+            // 첫 번째 문서 표시
+            switchTab('prd');
+
+            showStatus('모든 문서가 성공적으로 생성되었습니다!', 'success');
+        }
+
+        // 질문 건너뛰기
+        function skipQuestion() {
+            addMessage("(이 질문은 건너뛰었습니다)", 'user');
+
+            // 진행 상황 업데이트
+            document.getElementById(`q${currentQuestionIndex}`).style.background = '#fef3c7';
+
+            // 다음 질문으로 이동
+            currentQuestionIndex++;
+            updateProgress();
+
+            setTimeout(() => {
+                askNextQuestion();
+            }, 300);
+        }
+
+        // 원샷 프롬프트 생성
+        function generateOneShotPrompt() {
+            const formattedAnswers = questions.map((q, i) => {
+                const key = `q${i + 1}_${q.split(' ')[0]}`;
+                return `${i + 1}. ${q}: ${projectData[key] || '(건너뜀)'}`;
+            }).join('\n');
+
+            return `너는 **10년 이상의 경험을 가진 시니어 개발자**이자 아키텍트다. 지금부터 단 하나의 지시를 통해 완전한 애플리케이션을 구축하는 **'자율 개발(Autonomous Development)'** 세션을 시작한다.
+
+**[프로젝트 정보]**
+초기 아이디어: ${projectData.initial_idea}
+
+질문 답변 내용:
+${formattedAnswers}
+
+**[핵심 문서]**
+다음 4개의 문서를 참고하여 개발을 진행한다:
+1. PRD (Product Requirements Document)
+2. TRD (Technical Requirements Document)
+3. User Flow
+4. Prompt Design
+
+**[개발 지침]**
+1. 문서 분석: 먼저 모든 문서를 깊이 있게 분석하고 이해한다.
+2. 마일스톤 실행: Prompt Design에 정의된 5개 마일스톤을 순서대로 실행한다.
+3. 자율 진행: 각 마일스톤 완료 후 다음 단계로 자동 진행한다.
+4. 품질 관리: 각 단계마다 테스트를 수행하고 오류를 자체 수정한다.
+5. 최종 검증: 모든 마일스톤 완료 후 전체 시스템을 검증한다.
+
+**[실행 명령]**
+지금부터 마일스톤 1부터 시작하여 전체 개발을 자율적으로 완료하라.`;
+        }
+
+        // 탭 전환
+        function switchTab(tabName) {
+            // 모든 탭 비활성화
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 선택된 탭 활성화
+            event.target.classList.add('active');
+
+            // 문서 내용 표시
+            const content = generatedDocuments[tabName] || '문서를 생성 중입니다...';
+            document.getElementById('documentText').textContent = content;
+        }
+
+        // 문서 복사
+        function copyDocument() {
+            const activeTab = document.querySelector('.tab.active').textContent.toLowerCase().replace(' ', '');
+            const content = generatedDocuments[activeTab];
+
+            if (content) {
+                navigator.clipboard.writeText(content).then(() => {
+                    showStatus('클립보드에 복사되었습니다!', 'success');
+                });
+            }
+        }
+
+        // 문서 다운로드
+        function downloadDocument() {
+            const activeTab = document.querySelector('.tab.active').textContent;
+            const content = generatedDocuments[activeTab.toLowerCase().replace(' ', '')];
+
+            if (content) {
+                const blob = new Blob([content], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${activeTab}.md`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showStatus('다운로드가 시작되었습니다!', 'success');
+            }
+        }
+
+        // 로딩 표시
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.add('active');
+            } else {
+                loading.classList.remove('active');
+            }
+        }
+
+        // 상태 메시지 표시
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+
+            setTimeout(() => {
+                statusEl.className = 'status-message';
+            }, 3000);
+        }
+
+        // Enter 키로 전송
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendAnswer();
+            }
+        });
+
+        // 초기화 실행
+        init();
+    </script>
+</body>
+</html>
