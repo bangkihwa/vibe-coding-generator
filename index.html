@@ -586,6 +586,7 @@
 
         // Gemini API 호출
         async function callGeminiAPI(prompt, isSystemMessage = false) {
+            console.log('API 호출 시작:', prompt.substring(0, 100) + '...');
             showLoading(true);
 
             try {
@@ -607,10 +608,20 @@
                     })
                 });
 
-                const data = await response.json();
+                console.log('API 응답 상태:', response.status);
 
-                if (data.candidates && data.candidates[0]) {
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API 응답 에러:', errorText);
+                    throw new Error(`API 응답 실패: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('API 응답 데이터:', data);
+
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
                     const aiResponse = data.candidates[0].content.parts[0].text;
+                    console.log('AI 응답 텍스트:', aiResponse.substring(0, 200) + '...');
 
                     if (isSystemMessage) {
                         addMessage(aiResponse, 'ai');
@@ -625,11 +636,15 @@
 
                     showLoading(false);
                     return aiResponse;
+                } else {
+                    console.error('예상치 못한 API 응답 형식:', data);
+                    throw new Error('API 응답 형식이 올바르지 않습니다');
                 }
             } catch (error) {
                 console.error('API Error:', error);
-                showStatus('AI 응답 중 오류가 발생했습니다.', 'error');
+                showStatus(`AI 응답 중 오류가 발생했습니다: ${error.message}`, 'error');
                 showLoading(false);
+                return null;
             }
         }
 
@@ -745,18 +760,24 @@
 
         // 문서 생성
         async function generateDocuments() {
-            document.getElementById('resultsSection').classList.add('active');
+            console.log('문서 생성 시작');
+            console.log('수집된 데이터:', projectData);
 
+            document.getElementById('resultsSection').classList.add('active');
             showStatus('문서 생성을 시작합니다...', 'success');
 
-            // 수집된 전체 답변 정리
-            const formattedAnswers = questions.map((q, i) => {
-                const key = `q${i + 1}_${q.split(' ')[0]}`;
-                return `${i + 1}. ${q}\n   답변: ${projectData[key] || '(건너뜀)'}`;
-            }).join('\n\n');
+            try {
+                // 수집된 전체 답변 정리
+                const formattedAnswers = questions.map((q, i) => {
+                    const key = `q${i + 1}_${q.split(' ')[0]}`;
+                    return `${i + 1}. ${q}\n   답변: ${projectData[key] || '(건너뜀)'}`;
+                }).join('\n\n');
 
-            // PRD 생성
-            const prdPrompt = `다음은 사용자가 16개 질문에 답변한 내용입니다:
+                console.log('정리된 답변:', formattedAnswers);
+
+                // PRD 생성
+                showStatus('PRD 생성 중...', 'success');
+                const prdPrompt = `다음은 사용자가 16개 질문에 답변한 내용입니다:
 
 ${formattedAnswers}
 
@@ -774,11 +795,18 @@ PRD 구조:
 
 마크다운 형식으로 작성해주세요.`;
 
-            const prd = await callGeminiAPI(prdPrompt);
-            generatedDocuments.prd = prd;
+                const prd = await callGeminiAPI(prdPrompt);
+                if (prd) {
+                    generatedDocuments.prd = prd;
+                    console.log('PRD 생성 완료');
+                } else {
+                    generatedDocuments.prd = "PRD 생성에 실패했습니다. API 키를 확인해주세요.";
+                }
 
-            // TRD 생성
-            const trdPrompt = `다음 PRD를 바탕으로 TRD(Technical Requirements Document)를 작성해주세요:
+                // TRD 생성
+                showStatus('TRD 생성 중...', 'success');
+                if (prd) {
+                    const trdPrompt = `다음 PRD를 바탕으로 TRD(Technical Requirements Document)를 작성해주세요:
 
 ${prd}
 
@@ -792,11 +820,20 @@ TRD 구조:
 
 마크다운 형식으로 작성해주세요.`;
 
-            const trd = await callGeminiAPI(trdPrompt);
-            generatedDocuments.trd = trd;
+                    const trd = await callGeminiAPI(trdPrompt);
+                    if (trd) {
+                        generatedDocuments.trd = trd;
+                        console.log('TRD 생성 완료');
+                    } else {
+                        generatedDocuments.trd = "TRD 생성에 실패했습니다.";
+                    }
+                } else {
+                    generatedDocuments.trd = "PRD 생성 실패로 TRD를 생성할 수 없습니다.";
+                }
 
-            // User Flow 생성
-            const userflowPrompt = `다음 정보를 바탕으로 User Flow를 작성해주세요:
+                // User Flow 생성
+                showStatus('User Flow 생성 중...', 'success');
+                const userflowPrompt = `다음 정보를 바탕으로 User Flow를 작성해주세요:
 
 ${Object.entries(projectData).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
 
@@ -807,11 +844,17 @@ User Flow 구조:
 
 마크다운과 Mermaid 형식으로 작성해주세요.`;
 
-            const userflow = await callGeminiAPI(userflowPrompt);
-            generatedDocuments.userflow = userflow;
+                const userflow = await callGeminiAPI(userflowPrompt);
+                if (userflow) {
+                    generatedDocuments.userflow = userflow;
+                    console.log('User Flow 생성 완료');
+                } else {
+                    generatedDocuments.userflow = "User Flow 생성에 실패했습니다.";
+                }
 
-            // Prompt Design 생성
-            const promptDesignPrompt = `다음 정보를 바탕으로 AI 개발을 위한 Prompt Design 문서를 작성해주세요:
+                // Prompt Design 생성
+                showStatus('Prompt Design 생성 중...', 'success');
+                const promptDesignPrompt = `다음 정보를 바탕으로 AI 개발을 위한 Prompt Design 문서를 작성해주세요:
 
 ${Object.entries(projectData).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
 
@@ -822,16 +865,28 @@ Prompt Design 구조:
 
 각 프롬프트는 AI가 바로 실행할 수 있도록 구체적으로 작성해주세요.`;
 
-            const promptDesign = await callGeminiAPI(promptDesignPrompt);
-            generatedDocuments.prompt = promptDesign;
+                const promptDesign = await callGeminiAPI(promptDesignPrompt);
+                if (promptDesign) {
+                    generatedDocuments.prompt = promptDesign;
+                    console.log('Prompt Design 생성 완료');
+                } else {
+                    generatedDocuments.prompt = "Prompt Design 생성에 실패했습니다.";
+                }
 
-            // 원샷 프롬프트 생성
-            generatedDocuments.oneshot = generateOneShotPrompt();
+                // 원샷 프롬프트 생성
+                generatedDocuments.oneshot = generateOneShotPrompt();
+                console.log('원샷 프롬프트 생성 완료');
 
-            // 첫 번째 문서 표시
-            switchTab('prd');
+                console.log('생성된 문서들:', Object.keys(generatedDocuments));
 
-            showStatus('모든 문서가 성공적으로 생성되었습니다!', 'success');
+                // 첫 번째 문서 표시
+                switchTab('prd');
+
+                showStatus('모든 문서가 성공적으로 생성되었습니다!', 'success');
+            } catch (error) {
+                console.error('문서 생성 중 오류:', error);
+                showStatus(`문서 생성 중 오류가 발생했습니다: ${error.message}`, 'error');
+            }
         }
 
         // 질문 건너뛰기
