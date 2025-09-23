@@ -581,7 +581,13 @@
         let currentQuestionIndex = 0;
         let projectData = {};
         let conversationHistory = [];
-        let generatedDocuments = {};
+        let generatedDocuments = {
+            prd: null,
+            trd: null,
+            userflow: null,
+            prompt: null,
+            oneshot: null
+        };
 
         // 초기화
         function init() {
@@ -902,13 +908,13 @@ ${formattedAnswers}
                     console.log('PRD 생성 완료');
                     updateDocumentStatus('prd', '완료');
 
-                    // 현재 활성 탭이 PRD이거나 첫 번째 문서인 경우 내용 표시
+                    // 현재 활성 탭이 PRD인 경우 내용 표시
                     const activeTab = document.querySelector('.tab.active');
                     if (activeTab) {
                         const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
-                        if (cleanText === 'PRD' || cleanText === 'PRD ⏳') {
-                            document.getElementById('documentText').textContent = prd;
-                            console.log('PRD 문서를 화면에 표시했습니다.');
+                        if (cleanText === 'PRD') {
+                            console.log('PRD 탭이 활성화되어 있으므로 문서를 표시합니다.');
+                            switchTab('prd', activeTab);
                         }
                     }
 
@@ -937,7 +943,8 @@ ${formattedAnswers}
             if (activeTab) {
                 const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
                 if (cleanText === '원샷 프롬프트') {
-                    document.getElementById('documentText').textContent = generatedDocuments.oneshot;
+                    console.log('원샷 프롬프트 탭이 활성화되어 있으므로 문서를 표시합니다.');
+                    switchTab('oneshot', activeTab);
                 }
             }
         }
@@ -1004,7 +1011,8 @@ ${prd}
                 if (activeTab) {
                     const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
                     if (cleanText === 'TRD') {
-                        document.getElementById('documentText').textContent = trd;
+                        console.log('TRD 탭이 활성화되어 있으므로 문서를 표시합니다.');
+                        switchTab('trd', activeTab);
                     }
                 }
             } else {
@@ -1072,7 +1080,8 @@ Mermaid 다이어그램과 함께 구체적인 사용자 플로우를 작성해�
                 if (activeTab) {
                     const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
                     if (cleanText === 'User Flow') {
-                        document.getElementById('documentText').textContent = userflow;
+                        console.log('User Flow 탭이 활성화되어 있으므로 문서를 표시합니다.');
+                        switchTab('userflow', activeTab);
                     }
                 }
             } else {
@@ -1170,7 +1179,8 @@ API 엔드포인트를 구현하세요:
                 if (activeTab) {
                     const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
                     if (cleanText === 'Prompt Design') {
-                        document.getElementById('documentText').textContent = promptDesign;
+                        console.log('Prompt Design 탭이 활성화되어 있으므로 문서를 표시합니다.');
+                        switchTab('prompt', activeTab);
                     }
                 }
 
@@ -1284,8 +1294,10 @@ ${formattedAnswers}
 
         // 탭 전환
         function switchTab(tabName, tabElement) {
+            console.log('=== Tab Switch Debug ===');
             console.log('Switching to tab:', tabName);
-            console.log('Available documents:', Object.keys(generatedDocuments));
+            console.log('Available documents:', generatedDocuments);
+            console.log('Document keys:', Object.keys(generatedDocuments));
 
             // 모든 탭 비활성화
             document.querySelectorAll('.tab').forEach(tab => {
@@ -1312,16 +1324,16 @@ ${formattedAnswers}
             const textElement = document.getElementById('documentText');
             const documentContent = document.getElementById('documentContent');
 
-            console.log('Document content for', tabName, ':', content ? (content.substring(0, 200) + '...') : 'Not found');
+            console.log('Document content for', tabName, ':', content ? 'Found (length: ' + content.length + ')' : 'Not found');
 
-            if (content) {
+            if (content && content !== null) {
                 // 텍스트 내용 설정
                 textElement.textContent = content;
 
                 // 문서 컨테이너 표시
                 documentContent.style.display = 'block';
 
-                console.log('Document displayed successfully');
+                console.log('Document displayed successfully for tab:', tabName);
             } else {
                 // 문서가 아직 생성 중인 경우
                 const statusMessages = {
@@ -1332,7 +1344,11 @@ ${formattedAnswers}
                     'oneshot': '원샷 프롬프트를 생성 중입니다...'
                 };
                 textElement.textContent = statusMessages[tabName] || `${tabName.toUpperCase()} 문서를 생성 중입니다...`;
-                console.log('No document found for:', tabName);
+
+                // 문서 컨테이너는 항상 표시
+                documentContent.style.display = 'block';
+
+                console.log('No document found for:', tabName, '- showing status message');
             }
         }
 
