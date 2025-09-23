@@ -924,7 +924,11 @@ Prompt Design 구조:
                 console.log('생성된 문서들:', Object.keys(generatedDocuments));
 
                 // 첫 번째 문서 표시
-                switchTab('prd', null);
+                console.log('모든 문서 생성 완료. 첫 번째 탭으로 전환합니다.');
+                switchTab('prd', document.querySelector('.tab'));
+
+                // 결과 섹션 보이기
+                document.getElementById('resultsSection').style.display = 'block';
 
                 showStatus('모든 문서가 성공적으로 생성되었습니다!', 'success');
             } catch (error) {
