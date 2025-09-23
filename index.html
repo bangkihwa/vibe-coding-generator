@@ -807,23 +807,41 @@
             console.log('문서 생성 시작');
             console.log('수집된 데이터:', projectData);
 
+            // 결과 섹션 보이기
             const resultsSection = document.getElementById('resultsSection');
             resultsSection.classList.add('active');
             resultsSection.style.display = 'block';
-            showStatus('문서 생성을 시작합니다...', 'success');
 
-            try {
-                // 수집된 전체 답변 정리
-                const formattedAnswers = questions.map((q, i) => {
-                    const key = `q${i + 1}_${q.split(' ')[0]}`;
-                    return `${i + 1}. ${q}\n   답변: ${projectData[key] || '(건너뜀)'}`;
-                }).join('\n\n');
+            // 첫 번째 탭 활성화
+            const firstTab = document.querySelector('.tab');
+            if (firstTab) {
+                firstTab.classList.add('active');
+            }
 
-                console.log('정리된 답변:', formattedAnswers);
+            // 초기 문서 상태 설정
+            generatedDocuments = {
+                prd: null,
+                trd: null,
+                userflow: null,
+                prompt: null,
+                oneshot: null
+            };
 
-                // PRD 생성
-                showStatus('PRD 생성 중...', 'success');
-                const prdPrompt = `다음은 사용자가 16개 질문에 답변한 내용입니다:
+            // 수집된 전체 답변 정리
+            const formattedAnswers = questions.map((q, i) => {
+                const key = `q${i + 1}_${q.split(' ')[0]}`;
+                return `${i + 1}. ${q}\n   답변: ${projectData[key] || '(건너뜀)'}`;
+            }).join('\n\n');
+
+            console.log('정리된 답변:', formattedAnswers);
+
+            // 각 문서를 개별적으로 생성 (비동기 병렬 처리)
+
+            // PRD 생성
+            showStatus('PRD 생성 중...', 'success');
+            updateDocumentStatus('prd', '생성 중...');
+
+            const prdPrompt = `다음은 사용자가 16개 질문에 답변한 내용입니다:
 
 ${formattedAnswers}
 
@@ -831,126 +849,349 @@ ${formattedAnswers}
 
 위 정보를 바탕으로 상세한 PRD(Product Requirements Document)를 작성해주세요:
 
-PRD 구조:
-1. 제품 개요
-2. 목표 및 비전
-3. 타겟 사용자
-4. 핵심 기능
-5. 사용자 시나리오
-6. 성공 지표
+# PRD (Product Requirements Document)
 
-마크다운 형식으로 작성해주세요.`;
+## 1. 제품 개요
+[제품의 핵심 가치와 목적을 2-3문장으로 설명]
 
-                const prd = await callGeminiAPI(prdPrompt);
+## 2. 목표 및 비전
+### 단기 목표 (3개월)
+- 목표 1
+- 목표 2
+
+### 장기 비전 (1년)
+- 비전 설명
+
+## 3. 타겟 사용자
+### 주요 사용자
+- 사용자 그룹 설명
+
+### 페르소나
+- 이름:
+- 나이:
+- 직업:
+- 니즈:
+
+## 4. 핵심 기능
+### 기능 1: [기능명]
+- 설명:
+- 사용자 가치:
+
+### 기능 2: [기능명]
+- 설명:
+- 사용자 가치:
+
+## 5. 사용자 시나리오
+### 시나리오 1: [시나리오명]
+1. 단계 1
+2. 단계 2
+3. 단계 3
+
+## 6. 성공 지표
+- KPI 1:
+- KPI 2:
+- KPI 3:
+
+마크다운 형식으로 구체적이고 상세하게 작성해주세요.`;
+
+            callGeminiAPI(prdPrompt).then(prd => {
                 if (prd) {
                     generatedDocuments.prd = prd;
                     console.log('PRD 생성 완료');
+                    updateDocumentStatus('prd', '완료');
+                    // 현재 활성 탭이 PRD면 내용 표시
+                    if (document.querySelector('.tab.active')?.textContent === 'PRD') {
+                        document.getElementById('documentText').textContent = prd;
+                    }
+
+                    // PRD 기반으로 TRD 생성
+                    generateTRD(prd);
                 } else {
                     generatedDocuments.prd = "PRD 생성에 실패했습니다. API 키를 확인해주세요.";
+                    updateDocumentStatus('prd', '실패');
                 }
+            });
 
-                // TRD 생성
-                showStatus('TRD 생성 중...', 'success');
-                if (prd) {
-                    const trdPrompt = `다음 PRD를 바탕으로 TRD(Technical Requirements Document)를 작성해주세요:
+            // User Flow 생성 (PRD와 독립적으로)
+            generateUserFlow(formattedAnswers);
+
+            // Prompt Design 생성 (PRD와 독립적으로)
+            generatePromptDesign(formattedAnswers);
+
+            // 원샷 프롬프트 즉시 생성
+            generatedDocuments.oneshot = generateOneShotPrompt();
+            updateDocumentStatus('oneshot', '완료');
+            console.log('원샷 프롬프트 생성 완료');
+        }
+
+        // TRD 생성 함수
+        async function generateTRD(prd) {
+            showStatus('TRD 생성 중...', 'success');
+            updateDocumentStatus('trd', '생성 중...');
+
+            const trdPrompt = `다음 PRD를 바탕으로 TRD(Technical Requirements Document)를 작성해주세요:
 
 ${prd}
 
-TRD 구조:
-1. 기술 스택
-2. 시스템 아키텍처
-3. API 설계
-4. 데이터베이스 설계
-5. 보안 요구사항
-6. 성능 요구사항
+# TRD (Technical Requirements Document)
 
-마크다운 형식으로 작성해주세요.`;
+## 1. 기술 스택
+### Frontend
+- Framework:
+- UI Library:
+- State Management:
 
-                    const trd = await callGeminiAPI(trdPrompt);
-                    if (trd) {
-                        generatedDocuments.trd = trd;
-                        console.log('TRD 생성 완료');
-                    } else {
-                        generatedDocuments.trd = "TRD 생성에 실패했습니다.";
+### Backend
+- Language:
+- Framework:
+- Database:
+
+## 2. 시스템 아키텍처
+### 아키텍처 패턴
+- 설명
+
+### 주요 컴포넌트
+- 컴포넌트 1:
+- 컴포넌트 2:
+
+## 3. API 설계
+### API 1: [API명]
+- Method:
+- Endpoint:
+- Request:
+- Response:
+
+## 4. 데이터베이스 설계
+### 테이블 1: [테이블명]
+- 컬럼 1:
+- 컬럼 2:
+
+## 5. 보안 요구사항
+- 인증/인가:
+- 데이터 암호화:
+
+## 6. 성능 요구사항
+- 응답시간:
+- 동시 사용자:
+
+구체적이고 실제 구현 가능한 기술 명세를 작성해주세요.`;
+
+            const trd = await callGeminiAPI(trdPrompt);
+            if (trd) {
+                generatedDocuments.trd = trd;
+                console.log('TRD 생성 완료');
+                updateDocumentStatus('trd', '완료');
+                // 현재 활성 탭이 TRD면 내용 표시
+                if (document.querySelector('.tab.active')?.textContent === 'TRD') {
+                    document.getElementById('documentText').textContent = trd;
+                }
+            } else {
+                generatedDocuments.trd = "TRD 생성에 실패했습니다.";
+                updateDocumentStatus('trd', '실패');
+            }
+        }
+
+        // User Flow 생성 함수
+        async function generateUserFlow(formattedAnswers) {
+            showStatus('User Flow 생성 중...', 'success');
+            updateDocumentStatus('userflow', '생성 중...');
+
+            const userflowPrompt = `다음 정보를 바탕으로 User Flow를 작성해주세요:
+
+${formattedAnswers}
+
+# User Flow Document
+
+## 1. 주요 사용자 플로우
+
+### Flow 1: 온보딩 플로우
+\`\`\`mermaid
+graph TD
+    A[앱 시작] --> B[환영 화면]
+    B --> C[회원가입/로그인]
+    C --> D[프로필 설정]
+    D --> E[메인 화면]
+\`\`\`
+
+### Flow 2: 핵심 기능 플로우
+\`\`\`mermaid
+graph LR
+    A[메인화면] --> B[기능 선택]
+    B --> C[입력/설정]
+    C --> D[처리]
+    D --> E[결과 확인]
+\`\`\`
+
+## 2. 화면별 상세 플로우
+
+### 2.1 메인 화면
+- 진입 경로:
+- 주요 액션:
+- 이탈 경로:
+
+### 2.2 핵심 기능 화면
+- 진입 경로:
+- 주요 액션:
+- 이탈 경로:
+
+## 3. 엣지 케이스 처리
+- 에러 상황 1:
+- 에러 상황 2:
+
+Mermaid 다이어그램과 함께 구체적인 사용자 플로우를 작성해주세요.`;
+
+            const userflow = await callGeminiAPI(userflowPrompt);
+            if (userflow) {
+                generatedDocuments.userflow = userflow;
+                console.log('User Flow 생성 완료');
+                updateDocumentStatus('userflow', '완료');
+                // 현재 활성 탭이 User Flow면 내용 표시
+                if (document.querySelector('.tab.active')?.textContent === 'User Flow') {
+                    document.getElementById('documentText').textContent = userflow;
+                }
+            } else {
+                generatedDocuments.userflow = "User Flow 생성에 실패했습니다.";
+                updateDocumentStatus('userflow', '실패');
+            }
+        }
+
+        // Prompt Design 생성 함수
+        async function generatePromptDesign(formattedAnswers) {
+            showStatus('Prompt Design 생성 중...', 'success');
+            updateDocumentStatus('prompt', '생성 중...');
+
+            const promptDesignPrompt = `다음 정보를 바탕으로 AI 개발을 위한 Prompt Design 문서를 작성해주세요:
+
+${formattedAnswers}
+
+# Prompt Design Document
+
+## 개발 마일스톤
+
+### 마일스톤 1: 프로젝트 초기 설정
+**프롬프트:**
+\`\`\`
+새로운 [프로젝트 타입] 프로젝트를 시작합니다.
+프로젝트명: [프로젝트명]
+
+다음 작업을 수행하세요:
+1. 프로젝트 폴더 구조 생성
+2. 필요한 의존성 설치
+3. 기본 설정 파일 작성
+\`\`\`
+
+### 마일스톤 2: 핵심 기능 구현
+**프롬프트:**
+\`\`\`
+[핵심 기능]을 구현하세요.
+
+요구사항:
+- 요구사항 1
+- 요구사항 2
+
+구현 세부사항:
+- 세부사항 1
+- 세부사항 2
+\`\`\`
+
+### 마일스톤 3: UI/UX 구현
+**프롬프트:**
+\`\`\`
+다음 UI 컴포넌트를 구현하세요:
+1. 컴포넌트 1
+2. 컴포넌트 2
+
+디자인 가이드:
+- 스타일 가이드
+\`\`\`
+
+### 마일스톤 4: 데이터 처리 및 API
+**프롬프트:**
+\`\`\`
+API 엔드포인트를 구현하세요:
+1. API 1
+2. API 2
+
+데이터 모델:
+- 모델 정의
+\`\`\`
+
+### 마일스톤 5: 테스트 및 배포
+**프롬프트:**
+\`\`\`
+다음 테스트를 작성하고 실행하세요:
+1. 단위 테스트
+2. 통합 테스트
+
+배포 준비:
+- 빌드 최적화
+- 환경 설정
+\`\`\`
+
+## 테스트 시나리오
+1. 시나리오 1:
+2. 시나리오 2:
+
+각 마일스톤별로 AI가 즉시 실행 가능한 구체적인 프롬프트를 작성해주세요.`;
+
+            const promptDesign = await callGeminiAPI(promptDesignPrompt);
+            if (promptDesign) {
+                generatedDocuments.prompt = promptDesign;
+                console.log('Prompt Design 생성 완료');
+                updateDocumentStatus('prompt', '완료');
+                // 현재 활성 탭이 Prompt Design이면 내용 표시
+                if (document.querySelector('.tab.active')?.textContent === 'Prompt Design') {
+                    document.getElementById('documentText').textContent = promptDesign;
+                }
+
+                // 모든 문서 완료 확인
+                checkAllDocumentsComplete();
+            } else {
+                generatedDocuments.prompt = "Prompt Design 생성에 실패했습니다.";
+                updateDocumentStatus('prompt', '실패');
+            }
+        }
+
+        // 문서 상태 업데이트
+        function updateDocumentStatus(docType, status) {
+            const tabMapping = {
+                'prd': 'PRD',
+                'trd': 'TRD',
+                'userflow': 'User Flow',
+                'prompt': 'Prompt Design',
+                'oneshot': '원샷 프롬프트'
+            };
+
+            const tabName = tabMapping[docType];
+            document.querySelectorAll('.tab').forEach(tab => {
+                if (tab.textContent === tabName) {
+                    if (status === '생성 중...') {
+                        tab.style.opacity = '0.6';
+                        tab.textContent = `${tabName} ⏳`;
+                    } else if (status === '완료') {
+                        tab.style.opacity = '1';
+                        tab.textContent = `${tabName} ✅`;
+                    } else if (status === '실패') {
+                        tab.style.opacity = '1';
+                        tab.textContent = `${tabName} ❌`;
                     }
-                } else {
-                    generatedDocuments.trd = "PRD 생성 실패로 TRD를 생성할 수 없습니다.";
                 }
+            });
+        }
 
-                // User Flow 생성
-                showStatus('User Flow 생성 중...', 'success');
-                const userflowPrompt = `다음 정보를 바탕으로 User Flow를 작성해주세요:
+        // 모든 문서 완료 확인
+        function checkAllDocumentsComplete() {
+            const allGenerated = Object.keys(generatedDocuments).every(key =>
+                generatedDocuments[key] !== null
+            );
 
-${Object.entries(projectData).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
+            if (allGenerated) {
+                showStatus('모든 문서가 성공적으로 생성되었습니다! 🎉', 'success');
 
-User Flow 구조:
-1. 주요 사용자 플로우 정의
-2. 각 플로우의 단계별 설명
-3. Mermaid 다이어그램 코드
-
-마크다운과 Mermaid 형식으로 작성해주세요.`;
-
-                const userflow = await callGeminiAPI(userflowPrompt);
-                if (userflow) {
-                    generatedDocuments.userflow = userflow;
-                    console.log('User Flow 생성 완료');
-                } else {
-                    generatedDocuments.userflow = "User Flow 생성에 실패했습니다.";
-                }
-
-                // Prompt Design 생성
-                showStatus('Prompt Design 생성 중...', 'success');
-                const promptDesignPrompt = `다음 정보를 바탕으로 AI 개발을 위한 Prompt Design 문서를 작성해주세요:
-
-${Object.entries(projectData).map(([key, value]) => `- ${key}: ${value}`).join('\n')}
-
-Prompt Design 구조:
-1. 개발 마일스톤 (5단계)
-2. 각 마일스톤별 구체적인 프롬프트
-3. 테스트 시나리오
-
-각 프롬프트는 AI가 바로 실행할 수 있도록 구체적으로 작성해주세요.`;
-
-                const promptDesign = await callGeminiAPI(promptDesignPrompt);
-                if (promptDesign) {
-                    generatedDocuments.prompt = promptDesign;
-                    console.log('Prompt Design 생성 완료');
-                } else {
-                    generatedDocuments.prompt = "Prompt Design 생성에 실패했습니다.";
-                }
-
-                // 원샷 프롬프트 생성
-                generatedDocuments.oneshot = generateOneShotPrompt();
-                console.log('원샷 프롬프트 생성 완료');
-
-                console.log('생성된 문서들:', Object.keys(generatedDocuments));
-
-                // 첫 번째 문서 표시
-                console.log('모든 문서 생성 완료. 첫 번째 탭으로 전환합니다.');
-
-                // 결과 섹션 보이기
-                const resultsSection = document.getElementById('resultsSection');
-                resultsSection.classList.add('active');
-                resultsSection.style.display = 'block';
-
-                // 첫 번째 탭 활성화 및 문서 표시
-                const firstTab = document.querySelector('.tab');
-                if (firstTab) {
-                    firstTab.classList.add('active');
-                }
-
-                // PRD 문서 표시
-                const documentText = document.getElementById('documentText');
-                if (generatedDocuments.prd) {
-                    documentText.textContent = generatedDocuments.prd;
-                } else {
-                    documentText.textContent = 'PRD 문서가 생성되지 않았습니다.';
-                }
-
-                showStatus('모든 문서가 성공적으로 생성되었습니다!', 'success');
-            } catch (error) {
-                console.error('문서 생성 중 오류:', error);
-                showStatus(`문서 생성 중 오류가 발생했습니다: ${error.message}`, 'error');
+                // 탭 텍스트 정리
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.textContent = tab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                });
             }
         }
 
@@ -1019,11 +1260,12 @@ ${formattedAnswers}
             } else {
                 // 프로그래밍 방식으로 호출된 경우
                 document.querySelectorAll('.tab').forEach(tab => {
-                    if (tab.textContent === 'PRD' && tabName === 'prd') tab.classList.add('active');
-                    else if (tab.textContent === 'TRD' && tabName === 'trd') tab.classList.add('active');
-                    else if (tab.textContent === 'User Flow' && tabName === 'userflow') tab.classList.add('active');
-                    else if (tab.textContent === 'Prompt Design' && tabName === 'prompt') tab.classList.add('active');
-                    else if (tab.textContent === '원샷 프롬프트' && tabName === 'oneshot') tab.classList.add('active');
+                    const cleanText = tab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                    if (cleanText === 'PRD' && tabName === 'prd') tab.classList.add('active');
+                    else if (cleanText === 'TRD' && tabName === 'trd') tab.classList.add('active');
+                    else if (cleanText === 'User Flow' && tabName === 'userflow') tab.classList.add('active');
+                    else if (cleanText === 'Prompt Design' && tabName === 'prompt') tab.classList.add('active');
+                    else if (cleanText === '원샷 프롬프트' && tabName === 'oneshot') tab.classList.add('active');
                 });
             }
 
@@ -1043,7 +1285,15 @@ ${formattedAnswers}
 
                 console.log('Document displayed successfully');
             } else {
-                textElement.textContent = `${tabName.toUpperCase()} 문서를 생성 중입니다... (아직 생성되지 않았거나 오류가 발생했습니다)`;
+                // 문서가 아직 생성 중인 경우
+                const statusMessages = {
+                    'prd': 'PRD 문서를 생성 중입니다... 잠시만 기다려주세요.',
+                    'trd': 'TRD 문서를 생성 중입니다... PRD 완료 후 자동으로 생성됩니다.',
+                    'userflow': 'User Flow 문서를 생성 중입니다... 잠시만 기다려주세요.',
+                    'prompt': 'Prompt Design 문서를 생성 중입니다... 잠시만 기다려주세요.',
+                    'oneshot': '원샷 프롬프트를 생성 중입니다...'
+                };
+                textElement.textContent = statusMessages[tabName] || `${tabName.toUpperCase()} 문서를 생성 중입니다...`;
                 console.log('No document found for:', tabName);
             }
         }
@@ -1056,7 +1306,9 @@ ${formattedAnswers}
                 return;
             }
 
-            const tabText = activeTab.textContent.toLowerCase().replace(/\s+/g, '');
+            // 이모지 제거하고 탭 텍스트 가져오기
+            const cleanTabText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+            const tabText = cleanTabText.toLowerCase().replace(/\s+/g, '');
             let docKey = tabText;
 
             // 탭 이름을 문서 키로 매핑
@@ -1067,15 +1319,15 @@ ${formattedAnswers}
             console.log('Copying document:', docKey);
             const content = generatedDocuments[docKey];
 
-            if (content) {
+            if (content && content !== null) {
                 navigator.clipboard.writeText(content).then(() => {
-                    showStatus('클립보드에 복사되었습니다!', 'success');
+                    showStatus('클립보드에 복사되었습니다! 📋', 'success');
                 }).catch(err => {
                     console.error('복사 실패:', err);
                     showStatus('복사에 실패했습니다.', 'error');
                 });
             } else {
-                showStatus('복사할 문서가 없습니다.', 'error');
+                showStatus('문서가 아직 생성되지 않았습니다. 잠시만 기다려주세요.', 'error');
             }
         }
 
@@ -1087,8 +1339,9 @@ ${formattedAnswers}
                 return;
             }
 
-            const tabText = activeTab.textContent;
-            const tabKey = tabText.toLowerCase().replace(/\s+/g, '');
+            // 이모지 제거하고 탭 텍스트 가져오기
+            const cleanTabText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+            const tabKey = cleanTabText.toLowerCase().replace(/\s+/g, '');
             let docKey = tabKey;
 
             // 탭 이름을 문서 키로 매핑
@@ -1099,17 +1352,17 @@ ${formattedAnswers}
             console.log('Downloading document:', docKey);
             const content = generatedDocuments[docKey];
 
-            if (content) {
+            if (content && content !== null) {
                 const blob = new Blob([content], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${tabText}.md`;
+                a.download = `${cleanTabText}.md`;
                 a.click();
                 URL.revokeObjectURL(url);
-                showStatus('다운로드가 시작되었습니다!', 'success');
+                showStatus('다운로드가 시작되었습니다! 💾', 'success');
             } else {
-                showStatus('다운로드할 문서가 없습니다.', 'error');
+                showStatus('문서가 아직 생성되지 않았습니다. 잠시만 기다려주세요.', 'error');
             }
         }
 
