@@ -257,7 +257,7 @@
         }
 
         .results-section.active {
-            display: block;
+            display: block !important;
         }
 
         .document-tabs {
@@ -807,7 +807,9 @@
             console.log('문서 생성 시작');
             console.log('수집된 데이터:', projectData);
 
-            document.getElementById('resultsSection').classList.add('active');
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.classList.add('active');
+            resultsSection.style.display = 'block';
             showStatus('문서 생성을 시작합니다...', 'success');
 
             try {
@@ -925,10 +927,25 @@ Prompt Design 구조:
 
                 // 첫 번째 문서 표시
                 console.log('모든 문서 생성 완료. 첫 번째 탭으로 전환합니다.');
-                switchTab('prd', document.querySelector('.tab'));
 
                 // 결과 섹션 보이기
-                document.getElementById('resultsSection').style.display = 'block';
+                const resultsSection = document.getElementById('resultsSection');
+                resultsSection.classList.add('active');
+                resultsSection.style.display = 'block';
+
+                // 첫 번째 탭 활성화 및 문서 표시
+                const firstTab = document.querySelector('.tab');
+                if (firstTab) {
+                    firstTab.classList.add('active');
+                }
+
+                // PRD 문서 표시
+                const documentText = document.getElementById('documentText');
+                if (generatedDocuments.prd) {
+                    documentText.textContent = generatedDocuments.prd;
+                } else {
+                    documentText.textContent = 'PRD 문서가 생성되지 않았습니다.';
+                }
 
                 showStatus('모든 문서가 성공적으로 생성되었습니다!', 'success');
             } catch (error) {
@@ -990,7 +1007,6 @@ ${formattedAnswers}
         function switchTab(tabName, tabElement) {
             console.log('Switching to tab:', tabName);
             console.log('Available documents:', Object.keys(generatedDocuments));
-            console.log('Generated documents:', generatedDocuments);
 
             // 모든 탭 비활성화
             document.querySelectorAll('.tab').forEach(tab => {
@@ -1014,11 +1030,17 @@ ${formattedAnswers}
             // 문서 내용 표시
             const content = generatedDocuments[tabName];
             const textElement = document.getElementById('documentText');
+            const documentContent = document.getElementById('documentContent');
 
             console.log('Document content for', tabName, ':', content ? (content.substring(0, 200) + '...') : 'Not found');
 
             if (content) {
+                // 텍스트 내용 설정
                 textElement.textContent = content;
+
+                // 문서 컨테이너 표시
+                documentContent.style.display = 'block';
+
                 console.log('Document displayed successfully');
             } else {
                 textElement.textContent = `${tabName.toUpperCase()} 문서를 생성 중입니다... (아직 생성되지 않았거나 오류가 발생했습니다)`;
