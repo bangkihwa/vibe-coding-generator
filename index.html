@@ -812,10 +812,12 @@
             resultsSection.classList.add('active');
             resultsSection.style.display = 'block';
 
-            // 첫 번째 탭 활성화
+            // 첫 번째 탭 활성화 및 초기 메시지 표시
             const firstTab = document.querySelector('.tab');
             if (firstTab) {
                 firstTab.classList.add('active');
+                // 초기 메시지 표시
+                document.getElementById('documentText').textContent = 'PRD 문서를 생성 중입니다... 잠시만 기다려주세요.';
             }
 
             // 초기 문서 상태 설정
@@ -899,9 +901,15 @@ ${formattedAnswers}
                     generatedDocuments.prd = prd;
                     console.log('PRD 생성 완료');
                     updateDocumentStatus('prd', '완료');
-                    // 현재 활성 탭이 PRD면 내용 표시
-                    if (document.querySelector('.tab.active')?.textContent === 'PRD') {
-                        document.getElementById('documentText').textContent = prd;
+
+                    // 현재 활성 탭이 PRD이거나 첫 번째 문서인 경우 내용 표시
+                    const activeTab = document.querySelector('.tab.active');
+                    if (activeTab) {
+                        const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                        if (cleanText === 'PRD' || cleanText === 'PRD ⏳') {
+                            document.getElementById('documentText').textContent = prd;
+                            console.log('PRD 문서를 화면에 표시했습니다.');
+                        }
                     }
 
                     // PRD 기반으로 TRD 생성
@@ -909,6 +917,7 @@ ${formattedAnswers}
                 } else {
                     generatedDocuments.prd = "PRD 생성에 실패했습니다. API 키를 확인해주세요.";
                     updateDocumentStatus('prd', '실패');
+                    document.getElementById('documentText').textContent = generatedDocuments.prd;
                 }
             });
 
@@ -922,6 +931,15 @@ ${formattedAnswers}
             generatedDocuments.oneshot = generateOneShotPrompt();
             updateDocumentStatus('oneshot', '완료');
             console.log('원샷 프롬프트 생성 완료');
+
+            // 원샷 프롬프트 탭이 활성화되어 있으면 바로 표시
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) {
+                const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                if (cleanText === '원샷 프롬프트') {
+                    document.getElementById('documentText').textContent = generatedDocuments.oneshot;
+                }
+            }
         }
 
         // TRD 생성 함수
@@ -982,8 +1000,12 @@ ${prd}
                 console.log('TRD 생성 완료');
                 updateDocumentStatus('trd', '완료');
                 // 현재 활성 탭이 TRD면 내용 표시
-                if (document.querySelector('.tab.active')?.textContent === 'TRD') {
-                    document.getElementById('documentText').textContent = trd;
+                const activeTab = document.querySelector('.tab.active');
+                if (activeTab) {
+                    const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                    if (cleanText === 'TRD') {
+                        document.getElementById('documentText').textContent = trd;
+                    }
                 }
             } else {
                 generatedDocuments.trd = "TRD 생성에 실패했습니다.";
@@ -1046,8 +1068,12 @@ Mermaid 다이어그램과 함께 구체적인 사용자 플로우를 작성해�
                 console.log('User Flow 생성 완료');
                 updateDocumentStatus('userflow', '완료');
                 // 현재 활성 탭이 User Flow면 내용 표시
-                if (document.querySelector('.tab.active')?.textContent === 'User Flow') {
-                    document.getElementById('documentText').textContent = userflow;
+                const activeTab = document.querySelector('.tab.active');
+                if (activeTab) {
+                    const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                    if (cleanText === 'User Flow') {
+                        document.getElementById('documentText').textContent = userflow;
+                    }
                 }
             } else {
                 generatedDocuments.userflow = "User Flow 생성에 실패했습니다.";
@@ -1140,8 +1166,12 @@ API 엔드포인트를 구현하세요:
                 console.log('Prompt Design 생성 완료');
                 updateDocumentStatus('prompt', '완료');
                 // 현재 활성 탭이 Prompt Design이면 내용 표시
-                if (document.querySelector('.tab.active')?.textContent === 'Prompt Design') {
-                    document.getElementById('documentText').textContent = promptDesign;
+                const activeTab = document.querySelector('.tab.active');
+                if (activeTab) {
+                    const cleanText = activeTab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                    if (cleanText === 'Prompt Design') {
+                        document.getElementById('documentText').textContent = promptDesign;
+                    }
                 }
 
                 // 모든 문서 완료 확인
@@ -1164,13 +1194,21 @@ API 엔드포인트를 구현하세요:
 
             const tabName = tabMapping[docType];
             document.querySelectorAll('.tab').forEach(tab => {
-                if (tab.textContent === tabName) {
+                // 이모지를 제거한 텍스트로 비교
+                const cleanTabText = tab.textContent.replace(' ⏳', '').replace(' ✅', '').replace(' ❌', '');
+                if (cleanTabText === tabName) {
                     if (status === '생성 중...') {
                         tab.style.opacity = '0.6';
                         tab.textContent = `${tabName} ⏳`;
                     } else if (status === '완료') {
                         tab.style.opacity = '1';
                         tab.textContent = `${tabName} ✅`;
+
+                        // 해당 탭이 활성화되어 있으면 문서 내용 표시
+                        if (tab.classList.contains('active') && generatedDocuments[docType]) {
+                            document.getElementById('documentText').textContent = generatedDocuments[docType];
+                            console.log(`${tabName} 문서를 화면에 표시했습니다.`);
+                        }
                     } else if (status === '실패') {
                         tab.style.opacity = '1';
                         tab.textContent = `${tabName} ❌`;
